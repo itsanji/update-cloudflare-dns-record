@@ -1,7 +1,10 @@
 import os
+import datetime
 import requests
 import json
 from dotenv import load_dotenv
+
+now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 # Load environment variables from .env file
 load_dotenv()
@@ -29,20 +32,18 @@ headers = {
 response = requests.get(f"https://api.cloudflare.com/client/v4/zones?name={DOMAIN}", headers=headers)
 result = response.json()
 
-print(response)
-
 # Get current IP
 ip_response = requests.get("https://api.ipify.org?format=json")
 ip_data = ip_response.json()
 ip = ip_data['ip']
 
-print(f"\n\n\nNEW IP: {ip}\n\n\n")
+print(f"---------------------------------\nRunning at: {now} with Ipv4: {ip}")
 
 if 'result' in result and result['result']:
     CLOUDFLARE_ID = result['result'][0]['id']
 
     for idx, record in enumerate(records):
-        print(f"---------------------------------\n{idx}. Processing {record}\n")
+        print(f"Processing {record}")
         
         # Get DNS record details
         response = requests.get(
@@ -55,10 +56,10 @@ if 'result' in result and result['result']:
             CLOUDFLARE_RECORD_ID = dns_result['result'][0]['id']
             old_ip = dns_result['result'][0]['content']
             
-            print(f"\nOld IP: {old_ip}\n")
+            print(f"\tOld IP: {old_ip}")
 
             if old_ip == ip:
-                print("Nothing to update.\n")
+                print("\tNothing to update.")
                 continue
 
             # Validate IP and update if different
@@ -77,10 +78,11 @@ if 'result' in result and result['result']:
                 update_result = update_response.json()
 
                 if update_result.get('success'):
-                    print(f"\nRecord {record} updated.\nOld IP: {old_ip}\nNew IP: {ip}\n")
+                    print(f"\tRecord {record} updated.\nOld IP: {old_ip}\nNew IP: {ip}")
                 else:
-                    print("\nFailed to update record.\n")
+                    print("\tFailed to update record.")
         else:
-            print("\nRecord not found.\n")
+            print("\tRecord not found.")
 else:
     print("Error: Zone ID not found.")
+print("\n")
